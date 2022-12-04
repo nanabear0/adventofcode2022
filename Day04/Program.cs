@@ -33,6 +33,6 @@ internal class Program
         (r1s <= r2s && r1e >= r2e) || (r1s >= r2s && r1e <= r2e);
 
     private static Boolean doesOverlap(int r1s, int r1e, int r2s, int r2e) =>
-        (r1s >= r2s && r1s <= r2e) || (r2s >= r1s && r2s <= r1e);
+        r1e >= r2s && r2e >= r1s;
 
 }
