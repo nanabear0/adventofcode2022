@@ -1,17 +1,60 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Linq;
+using System.Text.RegularExpressions;
 
 internal class Program
 {
     private static void Main(string[] args)
     {
-        var fileReader = File.ReadLines("input.txt").GetEnumerator();
+        part1();
+        part2();
+    }
+
+    private static void part1()
+    {
+        IEnumerator<string> fileReader;
+        List<Stack<string>> columns;
+        readColumns(out fileReader, out columns);
+        while (fileReader.MoveNext())
+        {
+            List<int> matches;
+            Stack<string> source, receiver;
+            readLines(fileReader, columns, out matches, out source, out receiver);
+            foreach (var elem in Enumerable.Range(0, matches[0]).Select(_ => source.Pop()))
+                receiver.Push(elem);
+        }
+        Console.WriteLine($"part1: {string.Join("", columns.Select(v => v.First()))}");
+    }
+
+    private static void part2()
+    {
+        IEnumerator<string> fileReader;
+        List<Stack<string>> columns;
+        readColumns(out fileReader, out columns);
+        while (fileReader.MoveNext())
+        {
+            List<int> matches;
+            Stack<string> source, receiver;
+            readLines(fileReader, columns, out matches, out source, out receiver);
+            foreach (var elem in Enumerable.Range(0, matches[0]).Select(_ => source.Pop()).Reverse())
+                receiver.Push(elem);
+        }
+        Console.WriteLine($"part2: {string.Join("", columns.Select(v => v.First()))}");
+    }
+
+    private static void readLines(IEnumerator<string> fileReader, List<Stack<string>> columns, out List<int> matches, out Stack<string> source, out Stack<string> receiver)
+    {
+        var regex = new Regex(@"[0-9]+");
+        matches = regex.Matches(fileReader.Current).Select(v => int.Parse(v.Value)).ToList();
+        source = columns[matches[1] - 1];
+        receiver = columns[matches[2] - 1];
+    }
+
+    private static void readColumns(out IEnumerator<string> fileReader, out List<Stack<string>> columns)
+    {
+        fileReader = File.ReadLines("input.txt").GetEnumerator();
         fileReader.MoveNext();
         var columnCount = (fileReader.Current.Length + 1) / 4;
-        var columns = new List<List<string>>();
-        for (int i = 0; i < columnCount; i++)
-        {
-            columns.Add(new List<string>());
-        }
+        columns = new(Enumerable.Range(0, columnCount).Select(_ => new Stack<string>()));
         do
         {
             var regex = new Regex(@"(?:\[([A-Z])\]|   ) ?");
@@ -20,41 +63,9 @@ internal class Program
             for (int i = 0; i < matches.Count; i++)
             {
                 if (matches[i].Value.Trim().Length == 0) continue;
-                columns[i].Insert(0, matches[i].Groups[1].Value);
+                columns[i].Push(matches[i].Groups[1].Value);
             }
         } while (fileReader.MoveNext());
-
-        printStack(columns);
-        while (fileReader.MoveNext())
-        {
-            Console.WriteLine(fileReader.Current);
-            var regex = new Regex(@"[0-9]+");
-            var matches = regex.Matches(fileReader.Current).Select(v => int.Parse(v.Value)).ToList();
-            var source = columns[matches[1] - 1];
-            var receiver = columns[matches[2] - 1];
-            var tempList = new List<String>();
-            for (int i = 0; i < matches[0] && source.Count > 0; i++)
-            {
-                tempList.Add(source.Last());
-                source.RemoveAt(source.Count - 1);
-            }
-            // remove this line for p1
-            tempList.Reverse();
-            tempList.ForEach(v => receiver.Add(v));
-            printStack(columns);
-        }
-        Console.WriteLine($"part2: {string.Join("", columns.Select(v => v.Last()))}");
-    }
-
-    private static void printStack(List<List<string>> columns)
-    {
-        foreach (var column in columns)
-        {
-            foreach (var elem in column)
-            {
-                Console.Write($"{elem}, ");
-            }
-            Console.WriteLine();
-        }
+        columns = columns.Select(s => s).Select(s => new Stack<string>(s)).ToList();
     }
 }
