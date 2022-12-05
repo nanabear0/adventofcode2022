@@ -41,7 +41,12 @@ internal class Program
         Console.WriteLine($"part2: {string.Join("", columns.Select(v => v.First()))}");
     }
 
-    private static void readLines(IEnumerator<string> fileReader, List<Stack<string>> columns, out List<int> matches, out Stack<string> source, out Stack<string> receiver)
+    private static void readLines(
+        IEnumerator<string> fileReader,
+        List<Stack<string>> columns,
+        out List<int> matches,
+        out Stack<string> source,
+        out Stack<string> receiver)
     {
         var regex = new Regex(@"[0-9]+");
         matches = regex.Matches(fileReader.Current).Select(v => int.Parse(v.Value)).ToList();
@@ -49,7 +54,9 @@ internal class Program
         receiver = columns[matches[2] - 1];
     }
 
-    private static void readColumns(out IEnumerator<string> fileReader, out List<Stack<string>> columns)
+    private static void readColumns(
+        out IEnumerator<string> fileReader,
+        out List<Stack<string>> columns)
     {
         fileReader = File.ReadLines("input.txt").GetEnumerator();
         fileReader.MoveNext();
