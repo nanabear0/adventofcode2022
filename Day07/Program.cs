@@ -91,7 +91,7 @@ internal class Program
                         currentDir = root;
                         break;
                     default:
-                        currentDir = (Directory)currentDir.entries.First(x => x.getName().Equals(dirName));
+                        currentDir = (Directory)currentDir.entries.First(x => x is Directory && x.getName().Equals(dirName));
                         break;
                 }
             }
