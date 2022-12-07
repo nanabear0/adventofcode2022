@@ -10,7 +10,9 @@ internal class Program
 
     public class Directory : Entry
     {
-        public string _name;
+        private string _name;
+
+        private int _size = 0;
 
         public Directory parent;
 
@@ -22,7 +24,7 @@ internal class Program
 
         public int getSize()
         {
-            return entries.Select(e => e.getSize()).Sum();
+            return _size;
         }
 
         public string getName()
@@ -30,13 +32,32 @@ internal class Program
             return _name;
         }
 
-        public List<Entry> entries = new List<Entry>();
+        public void updateSize(int size)
+        {
+            _size += size;
+            parent?.updateSize(size);
+        }
+
+        public void newChild(Entry e)
+        {
+            if (e is Directory) directories.Add(e.getName(), (Directory)e);
+            else files.Add(e.getName(), (File)e);
+            var size = e.getSize();
+            updateSize(size);
+        }
+
+        private Dictionary<string, Directory> directories = new();
+        private Dictionary<string, File> files = new();
+
+        public Directory getDirectory(string name) => directories[name];
+        public IEnumerable<Directory> getDirectories() => directories.Values;
+
     }
 
     public class File : Entry
     {
-        public int _size;
-        public string _name;
+        private int _size;
+        private string _name;
 
         public File(string name, int size)
         {
@@ -59,17 +80,19 @@ internal class Program
         Directory root = new Directory("/", null);
         parseInput(root);
         List<int> output = new();
-        traverseDirectories(root, output);
+        getAllDirectorySizes(root, output);
+
         Console.WriteLine($"part1: {output.Where(v => v <= 100000).Sum()}");
+        
         int spaceNeeded = 30000000 - (70000000 - root.getSize());
         output.Sort();
         Console.WriteLine($"part2: {output.First(v => v > spaceNeeded)}");
     }
 
-    public static void traverseDirectories(Directory cd, List<int> output)
+    public static void getAllDirectorySizes(Directory cd, List<int> output)
     {
         output.Add(cd.getSize());
-        foreach (Directory d in cd.entries.Where(v => v is Directory)) traverseDirectories(d, output);
+        foreach (Directory d in cd.getDirectories()) getAllDirectorySizes(d, output);
     }
 
     private static void parseInput(Directory root)
@@ -91,20 +114,20 @@ internal class Program
                         currentDir = root;
                         break;
                     default:
-                        currentDir = (Directory)currentDir.entries.First(x => x is Directory && x.getName().Equals(dirName));
+                        currentDir = currentDir.getDirectory(dirName);
                         break;
                 }
             }
             else if (!String.IsNullOrWhiteSpace(match.Groups[3].Value))
             {
                 string dirName = match.Groups[3].Value;
-                currentDir.entries.Add(new Directory(dirName, currentDir));
+                currentDir.newChild(new Directory(dirName, currentDir));
             }
             else if (!String.IsNullOrWhiteSpace(match.Groups[4].Value))
             {
                 int size = int.Parse(match.Groups[4].Value);
                 string fileName = match.Groups[5].Value;
-                currentDir.entries.Add(new File(fileName, size));
+                currentDir.newChild(new File(fileName, size));
             }
         }
     }
