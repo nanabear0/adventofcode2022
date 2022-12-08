@@ -7,24 +7,24 @@
     }
     private static void part2()
     {
-        List<List<int>> trees = File.ReadLines("input.txt").Select(line => (line.Select(x => x - '0').ToList())).ToList();
+        List<List<int>> trees = File.ReadLines("input.txt").Select(line => line.Select(x => x - '0').ToList()).ToList();
         int maxScore = trees.SelectMany((treeRow, i) => treeRow.Select((tree, j) =>
         {
-            var upCount = trees.Select(v => v[j]).Take(i).Reverse().TakeWhile(v => v < trees[i][j]).Count();
+            var upCount = trees.Select(v => v[j]).Take(i).Reverse().TakeWhile(v => v < tree).Count();
             if (upCount != i) upCount++;
-            var downCount = trees.Select(v => v[j]).Skip(i + 1).TakeWhile(v => v < trees[i][j]).Count();
+            var downCount = trees.Select(v => v[j]).Skip(i + 1).TakeWhile(v => v < tree).Count();
             if (downCount != (trees.Count - i - 1)) downCount++;
-            var leftCount = trees[i].Take(j).Reverse().TakeWhile(v => v < trees[i][j]).Count();
+            var leftCount = treeRow.Take(j).Reverse().TakeWhile(v => v < tree).Count();
             if (leftCount != j) leftCount++;
-            var rightCount = trees[i].Skip(j + 1).TakeWhile(v => v < trees[i][j]).Count();
-            if (rightCount != (trees[i].Count - j - 1)) rightCount++;
+            var rightCount = treeRow.Skip(j + 1).TakeWhile(v => v < tree).Count();
+            if (rightCount != (treeRow.Count - j - 1)) rightCount++;
             return upCount * downCount * leftCount * rightCount;
         })).Max();
         Console.WriteLine($"part2: {maxScore}");
     }
     private static void part1()
     {
-        List<List<int>> trees = File.ReadLines("input.txt").Select(line => (line.Select(x => x - '0').ToList())).ToList();
+        List<List<int>> trees = File.ReadLines("input.txt").Select(line => line.Select(x => x - '0').ToList()).ToList();
         int count = trees.Select((treeRow, i) => treeRow.Where((tree, j) =>
                         trees.Select(v => v[j]).Take(i).All(v => v < tree) ||
                         trees.Select(v => v[j]).Skip(i + 1).All(v => v < tree) ||
