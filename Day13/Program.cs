@@ -70,14 +70,20 @@ internal class Program
 
         public int CompareTo(object? otherObj)
         {
-            IPacket other = (IPacket)otherObj;
-            foreach (var (first, second) in this.GetEnumerable()
-                .Zip(other.GetEnumerable()))
+            if (otherObj is IPacket other)
             {
-                var comparison = first.CompareTo(second);
-                if (comparison != 0) return comparison;
+                foreach (var (first, second) in this.GetEnumerable()
+                    .Zip(other.GetEnumerable()))
+                {
+                    var comparison = first.CompareTo(second);
+                    if (comparison != 0) return comparison;
+                }
+                return GetSize().CompareTo(other.GetSize());
             }
-            return GetSize().CompareTo(other.GetSize());
+            else
+            {
+                throw new Exception();
+            }
         }
 
         public bool isDivider() => divider;
@@ -108,19 +114,23 @@ internal class Program
 
     private static void Main()
     {
-        //pqrt1();
+        part1();
+        part2();
+    }
 
+    private static void part2()
+    {
         List<IPacket> packets = new();
         foreach (string line in File.ReadLines("input.txt").Where(s => !string.IsNullOrWhiteSpace(s)))
             packets.Add(IPacket.Parse(line, false));
         packets.Add(IPacket.Parse("[[2]]", true));
         packets.Add(IPacket.Parse("[[6]]", true));
         packets.Sort();
-        var key = packets.Select((v, i) => (v, i)).Where(v => v.v.isDivider()).Select(tuple => tuple.i).Aggregate((a, b) => a * b);
+        var key = packets.Select((v, i) => (v, i)).Where(v => v.v.isDivider()).Select(tuple => tuple.i + 1).Aggregate((a, b) => a * b);
         Console.WriteLine($"part2: {key}");
     }
 
-    private static void pqrt1()
+    private static void part1()
     {
         List<(IPacket, IPacket)> pairs = new();
         foreach (string[] lines in File.ReadLines("input.txt").Chunk(3))
@@ -129,7 +139,6 @@ internal class Program
         foreach (var ((p1, p2), i) in pairs.Select((v, i) => (v, i)))
         {
             if (p1.CompareTo(p2) < 0) sum += i + 1;
-            Console.WriteLine($"pair {i + 1}: {p1.CompareTo(p2) < 0}");
         }
         Console.WriteLine($"part1: {sum}");
     }
