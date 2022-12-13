@@ -16,7 +16,7 @@ internal class Program
     public class Monke
     {
         protected static long monkeFactor = 1;
-        public Queue<long> items = new();
+        private Queue<long> items = new();
 
         private int index;
         private int trueTarget;
@@ -24,11 +24,9 @@ internal class Program
         private char op;
         private long opValue;
         private long testValue;
-        public long monkeyBusiness;
-        public int getIndex()
-        {
-            return index;
-        }
+        private long monkeyBusiness;
+        public int getIndex() => index;
+        public long getMonkeyBusiness() => monkeyBusiness;
 
         protected Monke(int index, string itemsStr, char op, long opValue, long testValue, int trueTarget, int falseTarget)
         {
@@ -44,10 +42,10 @@ internal class Program
             this.testValue = testValue;
             Monke.monkeFactor = lcm(Monke.monkeFactor, testValue);
         }
+        public bool hasItems() => items.Count == 0;
 
-        public (int, long)? ooga()
+        public (int, long) ooga()
         {
-            if (items.Count == 0) return null;
             monkeyBusiness++;
             var newValue = items.Dequeue();
             switch (op)
@@ -94,16 +92,14 @@ internal class Program
         {
             foreach (Monke monke in monkes.Values)
             {
-                while (true)
+                while (monke.hasItems())
                 {
-                    (int, long)? item = monke.ooga();
-                    if (item.HasValue)
-                        monkes[item.Value.Item1].booga(item.Value.Item2);
-                    else break;
+                    (int, long) item = monke.ooga();
+                    monkes[item.Item1].booga(item.Item2);
                 }
             }
         }
-        var levelOfMonkeyBusiness = monkes.Values.Select(m => m.monkeyBusiness).OrderByDescending(v => v).Take(2).Aggregate((m1, m2) => m1 * m2);
+        var levelOfMonkeyBusiness = monkes.Values.Select(m => m.getMonkeyBusiness()).OrderByDescending(v => v).Take(2).Aggregate((m1, m2) => m1 * m2);
         Console.WriteLine($"part2: {levelOfMonkeyBusiness}");
     }
 }
