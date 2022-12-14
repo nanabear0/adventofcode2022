@@ -37,19 +37,24 @@ internal class Program
             var sandPos = (500, 0);
             do
             {
-                var nextPos = directionHierarchy.AsEnumerable().Select(d => (sandPos.Item1 + d.Item1, sandPos.Item2 + d.Item2)).Where(x => !cavern.ContainsKey(x)).FirstOrDefault(noMatch);
+                var nextPos = directionHierarchy.AsEnumerable()
+                    .Select(d => (sandPos.Item1 + d.Item1, sandPos.Item2 + d.Item2))
+                    .Where(x => !cavern.ContainsKey(x))
+                    .Where(x => x.Item2 != maxDistance + 2) // p2
+                    .FirstOrDefault(noMatch);
                 sandStopped = nextPos == noMatch;
                 if (sandStopped)
                 {
                     //Console.WriteLine($"stopped at: {sandPos.Item1},{sandPos.Item2}");
                     cavern[sandPos] = 'o';
                     sandDrops++;
+                    if (sandPos == (500, 0)) sandStopped = false; // p2
                     break;
                 }
                 sandPos = nextPos;
-            } while (sandPos.Item2 <= maxDistance);
+            } while (true); // p2
         } while (sandStopped);
 
-        Console.WriteLine($"part1:{sandDrops}");
+        Console.WriteLine($"part2:{sandDrops}");
     }
 }
