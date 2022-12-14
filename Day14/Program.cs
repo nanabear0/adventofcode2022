@@ -2,15 +2,15 @@
 
 internal class Program
 {
-    static (int, int) noMatch = (-1, -1);
-    static (int, int)[] directionHierarchy = new (int, int)[] { (0, 1), (-1, 1), (1, 1) };
-    private static void Main(string[] args)
+    readonly static (int, int) noMatch = (-1, -1);
+    readonly static (int, int)[] directionHierarchy = new (int, int)[] { (0, 1), (-1, 1), (1, 1) };
+    private static void Main()
     {
         Dictionary<(int, int), char> cavern = new();
         var maxDistance = 0;
         foreach (string path in File.ReadLines("input.txt"))
         {
-            Regex reggy = new Regex(@"([0-9]+),([0-9]+)");
+            Regex reggy = new(@"([0-9]+),([0-9]+)");
             var points = reggy.Matches(path)
                 .Select(match => match.Groups.Values.Skip(1).Take(2).Select(v => v.Value).ToList())
                 .Select(pointParts => (int.Parse(pointParts[0]), int.Parse(pointParts[1])))
@@ -40,7 +40,7 @@ internal class Program
                 var nextPos = directionHierarchy.AsEnumerable()
                     .Select(d => (sandPos.Item1 + d.Item1, sandPos.Item2 + d.Item2))
                     .Where(x => !cavern.ContainsKey(x))
-                    .Where(x => x.Item2 != maxDistance + 2) // p2
+                    .Where(x => x.Item2 < maxDistance + 2) // p2
                     .FirstOrDefault(noMatch);
                 sandStopped = nextPos == noMatch;
                 if (sandStopped)
