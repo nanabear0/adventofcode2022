@@ -62,18 +62,49 @@ internal class Program
                 distances[(p2, p1)] = distance;
             }
         }
-        var best = bestPosibility(valves, distances, new(), "AA", 30);
-        Console.WriteLine("part1");
+        var best = bestPosibility(valves, distances, new HashSet<string>(), valves.Values.Where(v => v.flow > 0).Select(v => v.name).ToHashSet(), "AA", 0, 30);
+        Console.WriteLine($"part1: {best}");
     }
 
     public static int bestPosibility(
         SortedDictionary<string, Valve> valves,
         SortedDictionary<(string, string), int> distances,
         HashSet<string> openValves,
+        HashSet<string> closedNonZeroValves,
         string currentValve,
+        int currentFlow,
         int timeLeft)
     {
-        return -1;
+        if (closedNonZeroValves.Count == 0)
+            return currentFlow + spendRemainingTime(valves, openValves, timeLeft);
+        var valvesInRange = valves.Values.Where(n => closedNonZeroValves.Contains(n.name))
+            .Where(n => distances[(currentValve, n.name)] + 1 < timeLeft).ToList();
+        if (valvesInRange.Count == 0)
+            return currentFlow + spendRemainingTime(valves, openValves, timeLeft);
+        return valvesInRange.Select(neighbour =>
+        {
+            var distance = distances[(neighbour.name, currentValve)];
+            var newOpenVales = openValves.ToHashSet();
+            newOpenVales.Add(neighbour.name);
+            var newClosedNonZeroValves = closedNonZeroValves.ToHashSet();
+            newClosedNonZeroValves.Remove(neighbour.name);
+            return bestPosibility(
+                valves,
+                distances,
+                newOpenVales,
+                newClosedNonZeroValves,
+                neighbour.name,
+                currentFlow + spendRemainingTime(valves, openValves, distance + 1),
+                timeLeft - distance - 1);
+        }).Max();
+    }
+
+    private static int spendRemainingTime(SortedDictionary<string, Valve> valves, HashSet<string> openValves, int timeLeft)
+    {
+        return valves.Values
+                        .Where(v => openValves.Contains(v.name))
+                        .Select(v => v.flow)
+                        .Sum() * timeLeft;
     }
 
     public static int findDistance(SortedDictionary<string, Valve> valves, string p1, string p2)
