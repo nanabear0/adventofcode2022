@@ -15,12 +15,11 @@ internal class Program
             robotCosts[0] = new int[] { matches[1], 0, 0, 0 };
             robotCosts[1] = new int[] { matches[2], 0, 0, 0 };
             robotCosts[2] = new int[] { matches[3], matches[4], 0, 0 };
-            robotCosts[3] = new int[] { 0, 0, matches[5], matches[6] };
+            robotCosts[3] = new int[] { matches[5], 0, matches[6], 0 };
             var currentResources = new int[] { 0, 0, 0, 0 };
             var currentRobots = new int[] { 1, 0, 0, 0 };
-            var b = bestResult(robotCosts, currentResources, currentRobots, 6);
+            var b = bestResult(robotCosts, currentResources, currentRobots, 23);
             sum += b * matches[0];
-            break;
         }
         Console.WriteLine($"part1: {sum}");
     }
@@ -31,6 +30,7 @@ internal class Program
         int timeRemaining
         )
     {
+        //Console.WriteLine($"[{string.Join(",", currentResources)}] [{string.Join(",", currentRobots)}] : {timeRemaining}");
         if (timeRemaining <= 0)
             return currentResources[3];
         var nextBuy = robotCosts
@@ -38,12 +38,13 @@ internal class Program
                 key: rc.Key,
                 additionalResources: rc.Value.Zip(currentResources).Select((t) => t.First - t.Second).ToArray()
                 ))
+            .Where(ar => currentRobots[ar.key] < 4)
             .Where(ar => ar.additionalResources.Zip(currentRobots).All((t) => t.Second != 0 || t.First == 0))
             .Select(ar => (
                 key: ar.key,
-                timeNeeded: ar.additionalResources.Zip(currentRobots).Select((t) => t.Second == 0 ? 0 : t.First / t.Second).Max()
+                timeNeeded: Math.Max(ar.additionalResources.Zip(currentRobots).Select((t) => t.Second == 0 ? 0 : t.First / t.Second).Max(), 0) + 1
             ))
-            .Where(tn => tn.timeNeeded + 1 < timeRemaining)
+            .Where(tn => tn.timeNeeded < timeRemaining)
             .ToList();
         if (nextBuy.Count() == 0)
             return currentRobots[3] * timeRemaining + currentResources[3];
@@ -51,11 +52,11 @@ internal class Program
         return nextBuy.Select(nb =>
         {
             var nextResources = currentRobots
-                .Zip(currentResources).Select(v => v.First * (nb.timeNeeded + 1) + v.Second)
+                .Zip(currentResources).Select(v => v.First * nb.timeNeeded + v.Second)
                 .Zip(robotCosts[nb.key]).Select(v => v.First - v.Second).ToArray();
             var nextRobots = currentRobots.ToArray();
             nextRobots[nb.key]++;
-            var nextTime = timeRemaining - nb.timeNeeded - 1;
+            var nextTime = timeRemaining - nb.timeNeeded;
             return bestResult(robotCosts, nextResources, nextRobots, nextTime);
         }).Max();
     }
