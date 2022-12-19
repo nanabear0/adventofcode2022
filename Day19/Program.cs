@@ -5,9 +5,9 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        var minutes = 24;
+        var minutes = 32;
         var reggy = new Regex(@"Blueprint ([0-9]+):\s+Each ore robot costs ([0-9]+) ore\.\s+Each clay robot costs ([0-9]+) ore\.\s+Each obsidian robot costs ([0-9]+) ore and ([0-9]+) clay\.\s+Each geode robot costs ([0-9]+) ore and ([0-9]+) obsidian\.");
-        var sum = reggy.Matches(File.ReadAllText("input.txt")).Select(match =>
+        var sum = reggy.Matches(File.ReadAllText("input.txt")).Take(3).Select(match =>
         {
             Dictionary<int, int[]> robotCosts = new();
             var matches = match.Groups.Values.Skip(1).Select(m => int.Parse(m.Value)).ToList();
@@ -16,17 +16,16 @@ internal class Program
             robotCosts[2] = new int[] { matches[3], matches[4], 0, 0 };
             robotCosts[3] = new int[] { matches[5], 0, matches[6], 0 };
             var limittingFactor = new int[] {
-                robotCosts.Values.Select(rc=>rc[0]).Skip(1).Max(),
-                (matches[4]+2) / 3 * 2,
-                (matches[6]+1) / 2,
+                robotCosts.Values.Select(rc=>rc[0]).Max(),
+                matches[4],
+                matches[6],
                 int.MaxValue
             };
             var currentResources = new int[] { 0, 0, 0, 0 };
             var currentRobots = new int[] { 1, 0, 0, 0 };
-            var b = bestResult(robotCosts, limittingFactor, currentResources, currentRobots, minutes);
-            return b * matches[0];
-        }).Sum();
-        Console.WriteLine($"part1: {sum}");
+            return bestResult(robotCosts, limittingFactor, currentResources, currentRobots, minutes);
+        }).Aggregate(1, (x, y) => x * y);
+        Console.WriteLine($"part2: {sum}");
     }
     public static int bestResult(
         Dictionary<int, int[]> robotCosts,
