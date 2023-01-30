@@ -19,6 +19,7 @@ internal class Program
     {
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
+        //part1();
         part2();
         stopwatch.Stop();
         Console.WriteLine(stopwatch.Elapsed.ToString());
@@ -35,7 +36,7 @@ internal class Program
         if (valves.Count == 0)
         {
             if (human.Count > elephant.Count) return 0;
-            return BestPossibility(human, distances, new HashSet<string>(), "AA", 26) + BestPossibility(elephant, distances, new HashSet<string>(), "AA", 26);
+            return BestPossibility2(human, distances, new HashSet<string>(), "AA", 26) + BestPossibility2(elephant, distances, new HashSet<string>(), "AA", 26);
         }
         var valve = valves.First();
         valves.Remove(valve.Key);
