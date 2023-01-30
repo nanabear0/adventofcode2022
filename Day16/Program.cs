@@ -1,24 +1,9 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 internal class Program
 {
-    public class DistanceKey : IComparable<DistanceKey>
-    {
-        public string[] points = new string[2];
-
-        public DistanceKey(string p1, string p2)
-        {
-            points[0] = p1;
-            points[1] = p2;
-        }
-
-        int IComparable<DistanceKey>.CompareTo(DistanceKey? other)
-        {
-            return this.points.Intersect(other.points).Count() == 2 ? 0 : -1;
-        }
-
-    }
     public class Valve
     {
         public string name;
@@ -29,177 +14,92 @@ internal class Program
             this.name = name;
         }
     }
+
     private static void Main(string[] args)
     {
-        //part1();
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
         part2();
+        stopwatch.Stop();
+        Console.WriteLine(stopwatch.Elapsed.ToString());
+    }
+
+    private static Dictionary<string, int> cache = new Dictionary<string, int>();
+
+    private static int TryEverything(
+      Dictionary<string, Valve> valves,
+      Dictionary<(string, string), int> distances,
+      Dictionary<string, Valve> human,
+      Dictionary<string, Valve> elephant)
+    {
+        if (valves.Count == 0)
+        {
+            if (human.Count > elephant.Count) return 0;
+            return BestPossibility(human, distances, new HashSet<string>(), "AA", 26) + BestPossibility(elephant, distances, new HashSet<string>(), "AA", 26);
+        }
+        var valve = valves.First();
+        valves.Remove(valve.Key);
+
+        human.Add(valve.Key, valve.Value);
+        int v1 = TryEverything(valves, distances, human, elephant);
+        human.Remove(valve.Key);
+
+        elephant.Add(valve.Key, valve.Value);
+        int v2 = TryEverything(valves, distances, human, elephant);
+        elephant.Remove(valve.Key);
+
+        valves.Add(valve.Key, valve.Value);
+        return Math.Max(v1, v2);
     }
 
     private static void part2()
     {
-        SortedDictionary<string, Valve> valves;
-        SortedDictionary<(string, string), int> distances;
+        Dictionary<string, Valve> valves;
+        Dictionary<(string, string), int> distances;
         parse(out valves, out distances);
-        var best = bestPosibility2(valves, distances, new HashSet<string>(), valves.Values.Where(v => v.flow > 0).Select(v => v.name).ToHashSet(), "AA", "AA", "", 0, "", 0, 0, 26);
-        Console.WriteLine($"part1: {best}");
-    }
-
-    public static int bestPosibility2(
-        SortedDictionary<string, Valve> valves,
-        SortedDictionary<(string, string), int> distances,
-        HashSet<string> openValves,
-        HashSet<string> closedNonZeroValves,
-        string currentValve1,
-        string currentValve2,
-        string moving1,
-        int leftDistance1,
-        string moving2,
-        int leftDistance2,
-        int currentFlow,
-        int timeLeft)
-    {
-        if (closedNonZeroValves.Count == 0)
-            return currentFlow + spendRemainingTime(valves, openValves, timeLeft);
-        List<(Valve n, int d)> valvesInRange1;
-        if (moving1 == "")
-            valvesInRange1 = valves.Values.Where(n => closedNonZeroValves.Contains(n.name))
-                .Where(n => n.name != moving2)
-                .Select(n => (n, d: distances[(currentValve1, n.name)]))
-                .Where(x => x.d + 1 < timeLeft).ToList();
-        else
-            valvesInRange1 = new() { (n: valves[moving1], d: leftDistance1) };
-
-        List<(Valve n, int d)> valvesInRange2;
-        if (moving2 == "")
-            valvesInRange2 = valves.Values.Where(n => closedNonZeroValves.Contains(n.name))
-                .Where(n => n.name != moving1)
-                .Select(n => (n, d: distances[(currentValve2, n.name)]))
-                .Where(x => x.d + 1 < timeLeft).ToList();
-        else
-            valvesInRange2 = new() { (n: valves[moving2], d: leftDistance2) };
-
-        if (valvesInRange1.Count == 0 && valvesInRange2.Count == 0)
-            return currentFlow + spendRemainingTime(valves, openValves, timeLeft);
-        else if (valvesInRange1.Count == 0)
-        {
-            currentFlow += spendRemainingTime(valves, openValves, leftDistance2 + 1);
-            timeLeft -= leftDistance2 + 1;
-            openValves.Add(moving2);
-            currentFlow += spendRemainingTime(valves, openValves, timeLeft);
-            return currentFlow;
-        }
-        else if (valvesInRange2.Count == 0)
-        {
-            currentFlow += spendRemainingTime(valves, openValves, leftDistance1 + 1);
-            timeLeft -= leftDistance1 + 1;
-            openValves.Add(moving1);
-            currentFlow += spendRemainingTime(valves, openValves, timeLeft);
-            return currentFlow;
-        }
-        else
-        {
-            if (valvesInRange1.Count == valvesInRange2.Count && valvesInRange1.Count == 1 && valvesInRange1[0].n.name == valvesInRange2[0].n.name)
-            {
-                if (valvesInRange1[0].d > valvesInRange2[0].d)
-                {
-                    currentFlow += spendRemainingTime(valves, openValves, valvesInRange2[0].d + 1);
-                    timeLeft -= valvesInRange2[0].d + 1;
-                    openValves.Add(valvesInRange2[0].n.name);
-                    currentFlow += spendRemainingTime(valves, openValves, timeLeft);
-                    return currentFlow;
-                }
-                else
-                {
-                    currentFlow += spendRemainingTime(valves, openValves, valvesInRange1[0].d + 1);
-                    timeLeft -= valvesInRange1[0].d + 1;
-                    openValves.Add(valvesInRange1[0].n.name);
-                    currentFlow += spendRemainingTime(valves, openValves, timeLeft);
-                    return currentFlow;
-                }
-            }
-            return valvesInRange1.SelectMany(v1 => valvesInRange2.Where(v2 => v2.n.name != v1.n.name).Select(v2 => (v1, v2)))
-                .Select(neighbour =>
-                {
-                    var neighbour1 = neighbour.Item1.n;
-                    var neighbour2 = neighbour.Item2.n;
-                    var distance1 = neighbour.Item1.d;
-                    var distance2 = neighbour.Item2.d;
-                    if (distance1 == distance2)
-                    {
-                        var newOpenVales = openValves.ToHashSet();
-                        newOpenVales.Add(neighbour1.name);
-                        newOpenVales.Add(neighbour2.name);
-                        var newClosedNonZeroValves = closedNonZeroValves.ToHashSet();
-                        newClosedNonZeroValves.Remove(neighbour1.name);
-                        newClosedNonZeroValves.Remove(neighbour2.name);
-                        return bestPosibility2(
-                            valves,
-                            distances,
-                            newOpenVales,
-                            newClosedNonZeroValves,
-                            neighbour1.name,
-                            neighbour2.name,
-                            "",
-                            0,
-                            "",
-                            0,
-                            currentFlow + spendRemainingTime(valves, openValves, distance1 + 1),
-                            timeLeft - distance1 - 1);
-                    }
-                    else if (distance1 > distance2)
-                    {
-                        var newOpenVales = openValves.ToHashSet();
-                        newOpenVales.Add(neighbour2.name);
-                        var newClosedNonZeroValves = closedNonZeroValves.ToHashSet();
-                        newClosedNonZeroValves.Remove(neighbour2.name);
-                        return bestPosibility2(
-                            valves,
-                            distances,
-                            newOpenVales,
-                            newClosedNonZeroValves,
-                            "",
-                            neighbour2.name,
-                            neighbour1.name,
-                            distance1 - distance2 - 1,
-                            "",
-                            0,
-                            currentFlow + spendRemainingTime(valves, openValves, distance2 + 1),
-                            timeLeft - distance2 - 1);
-                    }
-                    else
-                    {
-                        var newOpenVales = openValves.ToHashSet();
-                        newOpenVales.Add(neighbour1.name);
-                        var newClosedNonZeroValves = closedNonZeroValves.ToHashSet();
-                        newClosedNonZeroValves.Remove(neighbour1.name);
-                        return bestPosibility2(
-                            valves,
-                            distances,
-                            newOpenVales,
-                            newClosedNonZeroValves,
-                            neighbour1.name,
-                            "",
-                            "",
-                            0,
-                            neighbour2.name,
-                            distance2 - distance1 - 1,
-                            currentFlow + spendRemainingTime(valves, openValves, distance1 + 1),
-                            timeLeft - distance1 - 1);
-                    }
-                }).Max();
-        }
+        int best = TryEverything(valves, distances, new Dictionary<string, Valve>(), new Dictionary<string, Valve>());
+        Console.WriteLine($"part2: {best}");
     }
 
     private static void part1()
     {
-        SortedDictionary<string, Valve> valves;
-        SortedDictionary<(string, string), int> distances;
+        Dictionary<string, Program.Valve> valves;
+        Dictionary<(string, string), int> distances;
         parse(out valves, out distances);
-        var best = bestPosibility(valves, distances, new HashSet<string>(), valves.Values.Where(v => v.flow > 0).Select(v => v.name).ToHashSet(), "AA", 0, 30);
-        Console.WriteLine($"part1: {best}");
+        int best = BestPossibility(valves, distances, new HashSet<string>(), "AA", 30);
+        Console.WriteLine($"part2: {best}");
     }
 
-    private static void parse(out SortedDictionary<string, Valve> valves, out SortedDictionary<(string, string), int> distances)
+    private static int BestPossibility2(
+        Dictionary<string, Valve> valves,
+        Dictionary<(string, string), int> distances,
+        HashSet<string> openValves,
+        string current,
+        int leftTime)
+    {
+        string key = string.Join(",", valves);
+        if (cache.ContainsKey(key)) return cache[key];
+        int best = BestPossibility(valves, distances, openValves, current, leftTime);
+        cache[key] = best;
+        return best;
+    }
+
+    private static int BestPossibility(
+        Dictionary<string, Valve> valves,
+        Dictionary<(string, string), int> distances,
+        HashSet<string> openValves,
+        string current,
+        int leftTime)
+    {
+        return valves.Where(v => !openValves.Contains(v.Key)).Select(v =>
+        {
+            int time = distances[(current, v.Key)] + 1;
+            if (time >= leftTime) return 0;
+            return v.Value.flow * (leftTime - time) + BestPossibility(valves, distances, openValves.Prepend(v.Key).ToHashSet(), v.Key, leftTime - time);
+        }).DefaultIfEmpty(0).Max();
+    }
+
+    private static void parse(out Dictionary<string, Valve> valves, out Dictionary<(string, string), int> distances)
     {
         valves = new();
         foreach (string line in File.ReadLines("input.txt"))
@@ -233,50 +133,10 @@ internal class Program
                 distances[(p2, p1)] = distance;
             }
         }
+        valves = valves.Where(v => v.Value.flow > 0).ToDictionary(v => v.Key, v => v.Value);
     }
 
-    public static int bestPosibility(
-        SortedDictionary<string, Valve> valves,
-        SortedDictionary<(string, string), int> distances,
-        HashSet<string> openValves,
-        HashSet<string> closedNonZeroValves,
-        string currentValve,
-        int currentFlow,
-        int timeLeft)
-    {
-        if (closedNonZeroValves.Count == 0)
-            return currentFlow + spendRemainingTime(valves, openValves, timeLeft);
-        var valvesInRange = valves.Values.Where(n => closedNonZeroValves.Contains(n.name))
-            .Where(n => distances[(currentValve, n.name)] + 1 < timeLeft).ToList();
-        if (valvesInRange.Count == 0)
-            return currentFlow + spendRemainingTime(valves, openValves, timeLeft);
-        return valvesInRange.Select(neighbour =>
-        {
-            var distance = distances[(neighbour.name, currentValve)];
-            var newOpenVales = openValves.ToHashSet();
-            newOpenVales.Add(neighbour.name);
-            var newClosedNonZeroValves = closedNonZeroValves.ToHashSet();
-            newClosedNonZeroValves.Remove(neighbour.name);
-            return bestPosibility(
-                valves,
-                distances,
-                newOpenVales,
-                newClosedNonZeroValves,
-                neighbour.name,
-                currentFlow + spendRemainingTime(valves, openValves, distance + 1),
-                timeLeft - distance - 1);
-        }).Max();
-    }
-
-    private static int spendRemainingTime(SortedDictionary<string, Valve> valves, HashSet<string> openValves, int timeLeft)
-    {
-        return valves.Values
-                        .Where(v => openValves.Contains(v.name))
-                        .Select(v => v.flow)
-                        .Sum() * timeLeft;
-    }
-
-    public static int findDistance(SortedDictionary<string, Valve> valves, string p1, string p2)
+    public static int findDistance(Dictionary<string, Valve> valves, string p1, string p2)
     {
         Dictionary<string, int> distances = new() { { p1, 0 } };
         HashSet<string> outer = new() { p1 };
